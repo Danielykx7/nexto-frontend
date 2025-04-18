@@ -1,41 +1,32 @@
+/* src/app/[countryCode]/(main)/page.tsx */
 import { Metadata } from "next"
-
-import FeaturedProducts from "@modules/home/components/featured-products"
 import Hero from "@modules/home/components/hero"
+import FeaturedProducts from "@modules/home/components/featured-products"
 import { listCollections } from "@lib/data/collections"
 import { getRegion } from "@lib/data/regions"
 
 export const metadata: Metadata = {
   title: "Nexto Shop - Elektronika a Díly",
   description:
-    "Široký výběr elektroniky a dílů. Objevte kvalitní produkty a užijte si rychlé a spolehlivé nakupování s naší moderní platformou.",
+    "Široký výběr elektroniky a dílů. Objevte kvalitní produkty a užijte si rychlé a spolehlivé nakupování.",
 }
 
-export default async function Home(props: {
-  params: Promise<{ countryCode: string }>
-}) {
-  const params = await props.params
-
+export default async function Home({ params }: { params: { countryCode: string } }) {
   const { countryCode } = params
-
   const region = await getRegion(countryCode)
-
   const { collections } = await listCollections({
+    handle: ["featured"],
     fields: "id, handle, title",
   })
 
-  if (!collections || !region) {
+  if (!region || !collections || collections.length === 0) {
     return null
   }
 
   return (
     <>
       <Hero />
-      <div className="py-12">
-        <ul className="flex flex-col gap-x-6">
-          <FeaturedProducts collections={collections} region={region} />
-        </ul>
-      </div>
+      <FeaturedProducts collections={collections} region={region} />
     </>
   )
 }

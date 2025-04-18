@@ -1,4 +1,4 @@
-// src/modules/home/components/hero/index.tsx
+/* src/modules/home/components/hero/index.tsx */
 import { Button, Heading } from "@medusajs/ui"
 
 export default function Hero() {
@@ -7,14 +7,11 @@ export default function Hero() {
       {/* Pozadí */}
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage: `url("/images/hero.jpg")`,
-        }}
+        style={{ backgroundImage: `url("/images/hero.jpg")` }}
       />
-      {/* Poloprůhledný černý overlay */}
+      {/* Overlay */}
       <div className="absolute inset-0 bg-black bg-opacity-40" />
-
-      {/* Obsah */}
+      {/* Obsah hero sekce */}
       <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4 md:px-0 gap-6">
         <Heading
           level="h1"
@@ -30,7 +27,7 @@ export default function Hero() {
         </Heading>
         <div className="flex space-x-4">
           <Button variant="primary" size="large">
-            Nakupovat
+            Nakupovat nyní
           </Button>
           <Button variant="secondary" size="large">
             Více informací
