@@ -56,7 +56,7 @@ const CartDropdown = ({ cart: cartState }: { cart?: HttpTypes.StoreCart | null }
       <Popover className="relative h-full">
         {/* Trigger: Popover.Button with icon and badge; click navigates to cart */}
         <Popover.Button
-          className="h-full flex items-center justify-center relative px-2"
+          className="h-full flex items-center justify-center relative px-2 text-ui-fg-subtle hover:text-ui-fg-base"
           aria-label={`Košík (${totalItems})`}
           onClick={() => router.push('/cart')}
         >
