@@ -15,7 +15,7 @@ type MyInformationProps = {
 const ProfileEmail: React.FC<MyInformationProps> = ({ customer }) => {
   const [successState, setSuccessState] = React.useState(false)
 
-  // TODO: It seems we don't support updating emails now?
+  // TODO: Zdá se, že nyní nepodporujeme aktualizaci e-mailů?
   const updateCustomerEmail = (
     _currentState: Record<string, unknown>,
     formData: FormData
@@ -48,7 +48,7 @@ const ProfileEmail: React.FC<MyInformationProps> = ({ customer }) => {
   return (
     <form action={formAction} className="w-full">
       <AccountInfo
-        label="Email"
+        label="E-mail"
         currentInfo={`${customer.email}`}
         isSuccess={successState}
         isError={!!state.error}
@@ -58,7 +58,7 @@ const ProfileEmail: React.FC<MyInformationProps> = ({ customer }) => {
       >
         <div className="grid grid-cols-1 gap-y-2">
           <Input
-            label="Email"
+            label="E-mail"
             name="email"
             type="email"
             autoComplete="email"

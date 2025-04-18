@@ -6,9 +6,9 @@ import { listCollections } from "@lib/data/collections"
 import { getRegion } from "@lib/data/regions"
 
 export const metadata: Metadata = {
-  title: "Medusa Next.js Starter Template",
+  title: "Nexto Shop - Elektronika a Díly",
   description:
-    "A performant frontend ecommerce starter template with Next.js 15 and Medusa.",
+    "Široký výběr elektroniky a dílů. Objevte kvalitní produkty a užijte si rychlé a spolehlivé nakupování s naší moderní platformou.",
 }
 
 export default async function Home(props: {

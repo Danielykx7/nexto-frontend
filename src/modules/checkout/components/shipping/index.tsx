@@ -176,7 +176,7 @@ const Shipping: React.FC<ShippingProps> = ({
                 className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover"
                 data-testid="edit-delivery-button"
               >
-                Edit
+                Upravit
               </button>
             </Text>
           )}
@@ -186,11 +186,11 @@ const Shipping: React.FC<ShippingProps> = ({
           <div className="grid">
             <div className="flex flex-col">
               <span className="font-medium txt-medium text-ui-fg-base">
-                Shipping method
+                Způsob dopravy
               </span>
-              <span className="mb-4 text-ui-fg-muted txt-medium">
-                How would you like you order delivered
-              </span>
+                <span className="mb-4 text-ui-fg-muted txt-medium">
+                Jak byste chtěli doručit svou objednávku
+                </span>
             </div>
             <div data-testid="delivery-options-container">
               <div className="pb-8 md:pt-0 pt-2">
@@ -223,7 +223,7 @@ const Shipping: React.FC<ShippingProps> = ({
                           checked={showPickupOptions === PICKUP_OPTION_ON}
                         />
                         <span className="text-base-regular">
-                          Pick up your order
+                          Vyzvednout objednávku
                         </span>
                       </div>
                       <span className="justify-self-end text-ui-fg-base">
@@ -295,10 +295,10 @@ const Shipping: React.FC<ShippingProps> = ({
             <div className="grid">
               <div className="flex flex-col">
                 <span className="font-medium txt-medium text-ui-fg-base">
-                  Store
+                  Obchod
                 </span>
                 <span className="mb-4 text-ui-fg-muted txt-medium">
-                  Choose a store near you
+                  Najdi obchod poblíž
                 </span>
               </div>
               <div data-testid="delivery-options-container">

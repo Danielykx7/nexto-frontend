@@ -17,18 +17,18 @@ export default async function TransferPage({
           Transfer request for order {id}
         </Heading>
         <Text className="text-zinc-600">
-          You&#39;ve received a request to transfer ownership of your order ({id}).
-          If you agree to this request, you can approve the transfer by clicking
-          the button below.
+          Obdrželi jste žádost o převod vlastnictví vaší objednávky ({id}).
+          Pokud s touto žádostí souhlasíte, můžete převod schválit kliknutím
+          na tlačítko níže.
         </Text>
         <div className="w-full h-px bg-zinc-200" />
         <Text className="text-zinc-600">
-          If you accept, the new owner will take over all responsibilities and
-          permissions associated with this order.
+          Pokud souhlasíte, nový vlastník převezme veškeré odpovědnosti a
+          oprávnění spojená s touto objednávkou.
         </Text>
         <Text className="text-zinc-600">
-          If you do not recognize this request or wish to retain ownership, no
-          further action is required.
+          Pokud tuto žádost nepoznáváte nebo si přejete vlastnictví ponechat,
+          není nutné podnikat žádné další kroky.
         </Text>
         <div className="w-full h-px bg-zinc-200" />
         <TransferActions id={id} token={token} />
