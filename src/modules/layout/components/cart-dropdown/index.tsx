@@ -1,94 +1,75 @@
+// src/modules/layout/components/cart-dropdown/index.tsx
 "use client"
 
-import {
-  Popover,
-  PopoverButton,
-  PopoverPanel,
-  Transition,
-} from "@headlessui/react"
+import { Popover, PopoverPanel, Transition } from "@headlessui/react"
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
-import { Button } from "@medusajs/ui"
+import { Badge, Button } from "@medusajs/ui"
 import DeleteButton from "@modules/common/components/delete-button"
 import LineItemOptions from "@modules/common/components/line-item-options"
 import LineItemPrice from "@modules/common/components/line-item-price"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import Thumbnail from "@modules/products/components/thumbnail"
-import { usePathname } from "next/navigation"
+import { ShoppingCart } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
 import { Fragment, useEffect, useRef, useState } from "react"
 
-const CartDropdown = ({
-  cart: cartState,
-}: {
-  cart?: HttpTypes.StoreCart | null
-}) => {
-  const [activeTimer, setActiveTimer] = useState<NodeJS.Timer | undefined>(
-    undefined
-  )
-  const [cartDropdownOpen, setCartDropdownOpen] = useState(false)
+const CartDropdown = ({ cart: cartState }: { cart?: HttpTypes.StoreCart | null }) => {
+  const router = useRouter()
+  const pathname = usePathname()
+  const [activeTimer, setActiveTimer] = useState<NodeJS.Timer>()
+  const [openDropdown, setOpenDropdown] = useState(false)
 
-  const open = () => setCartDropdownOpen(true)
-  const close = () => setCartDropdownOpen(false)
-
-  const totalItems =
-    cartState?.items?.reduce((acc, item) => {
-      return acc + item.quantity
-    }, 0) || 0
-
+  const totalItems = cartState?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0
   const subtotal = cartState?.subtotal ?? 0
-  const itemRef = useRef<number>(totalItems || 0)
+  const itemRef = useRef<number>(totalItems)
+
+  const open = () => setOpenDropdown(true)
+  const close = () => setOpenDropdown(false)
 
   const timedOpen = () => {
     open()
-
     const timer = setTimeout(close, 5000)
-
     setActiveTimer(timer)
   }
 
   const openAndCancel = () => {
-    if (activeTimer) {
-      clearTimeout(activeTimer)
-    }
-
+    if (activeTimer) clearTimeout(activeTimer)
     open()
   }
 
-  // Clean up the timer when the component unmounts
   useEffect(() => {
     return () => {
-      if (activeTimer) {
-        clearTimeout(activeTimer)
-      }
+      if (activeTimer) clearTimeout(activeTimer)
     }
   }, [activeTimer])
 
-  const pathname = usePathname()
-
-  // open cart dropdown when modifying the cart items, but only if we're not on the cart page
   useEffect(() => {
     if (itemRef.current !== totalItems && !pathname.includes("/cart")) {
       timedOpen()
+      itemRef.current = totalItems
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalItems, itemRef.current])
+  }, [totalItems, pathname])
 
   return (
-    <div
-      className="h-full z-50"
-      onMouseEnter={openAndCancel}
-      onMouseLeave={close}
-    >
+    <div className="relative h-full" onMouseEnter={openAndCancel} onMouseLeave={close}>
       <Popover className="relative h-full">
-        <PopoverButton className="h-full">
-          <LocalizedClientLink
-            className="hover:text-ui-fg-base"
-            href="/cart"
-            data-testid="nav-cart-link"
-          >{`Košík (${totalItems})`}</LocalizedClientLink>
-        </PopoverButton>
+        {/* Trigger: Popover.Button with icon and badge; click navigates to cart */}
+        <Popover.Button
+          className="h-full flex items-center justify-center relative px-2"
+          aria-label={`Košík (${totalItems})`}
+          onClick={() => router.push('/cart')}
+        >
+          <ShoppingCart className="w-5 h-5 text-ui-fg-subtle hover:text-ui-fg-base" />
+          {totalItems > 0 && (
+            <Badge size="small" className="absolute top-0 right-0 w-4 h-4 text-xs leading-none flex items-center justify-center p-0">
+              {totalItems}
+            </Badge>
+          )}
+        </Popover.Button>
+
         <Transition
-          show={cartDropdownOpen}
+          show={openDropdown}
           as={Fragment}
           enter="transition ease-out duration-200"
           enterFrom="opacity-0 translate-y-1"
@@ -99,125 +80,61 @@ const CartDropdown = ({
         >
           <PopoverPanel
             static
-            className="hidden small:block absolute top-[calc(100%+1px)] right-0 bg-white border-x border-b border-gray-200 w-[420px] text-ui-fg-base"
+            className="absolute top-[calc(100%+1px)] right-0 z-50 hidden small:block w-[420px] bg-white border border-gray-200 text-ui-fg-base"
             data-testid="nav-cart-dropdown"
           >
             <div className="p-4 flex items-center justify-center">
               <h3 className="text-large-semi">Košík</h3>
             </div>
-            {cartState && cartState.items?.length ? (
+            {cartState?.items?.length ? (
               <>
-                <div className="overflow-y-scroll max-h-[402px] px-4 grid grid-cols-1 gap-y-8 no-scrollbar p-px">
-                  {cartState.items
-                    .sort((a, b) => {
-                      return (a.created_at ?? "") > (b.created_at ?? "")
-                        ? -1
-                        : 1
-                    })
-                    .map((item) => (
-                      <div
-                        className="grid grid-cols-[122px_1fr] gap-x-4"
-                        key={item.id}
-                        data-testid="cart-item"
-                      >
-                        <LocalizedClientLink
-                          href={`/products/${item.product_handle}`}
-                          className="w-24"
-                        >
-                          <Thumbnail
-                            thumbnail={item.thumbnail}
-                            images={item.variant?.product?.images}
-                            size="square"
-                          />
-                        </LocalizedClientLink>
-                        <div className="flex flex-col justify-between flex-1">
-                          <div className="flex flex-col flex-1">
-                            <div className="flex items-start justify-between">
-                              <div className="flex flex-col overflow-ellipsis whitespace-nowrap mr-4 w-[180px]">
-                                <h3 className="text-base-regular overflow-hidden text-ellipsis">
-                                  <LocalizedClientLink
-                                    href={`/products/${item.product_handle}`}
-                                    data-testid="product-link"
-                                  >
-                                    {item.title}
-                                  </LocalizedClientLink>
-                                </h3>
-                                <LineItemOptions
-                                  variant={item.variant}
-                                  data-testid="cart-item-variant"
-                                  data-value={item.variant}
-                                />
-                                <span
-                                  data-testid="cart-item-quantity"
-                                  data-value={item.quantity}
-                                >
-                                  Množství: {item.quantity}
-                                </span>
-                              </div>
-                              <div className="flex justify-end">
-                                <LineItemPrice
-                                  item={item}
-                                  style="tight"
-                                  currencyCode={cartState.currency_code}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          <DeleteButton
-                            id={item.id}
-                            className="mt-1"
-                            data-testid="cart-item-remove-button"
-                          >
-                            Odebrat
-                          </DeleteButton>
+                <div className="max-h-[402px] overflow-y-auto px-4 grid gap-y-8">
+                  {cartState.items.map((item) => (
+                    <div key={item.id} className="grid grid-cols-[122px_1fr] gap-x-4">
+                      <LocalizedClientLink href={`/products/${item.product_handle}`} className="w-24">
+                        <Thumbnail
+                          thumbnail={item.thumbnail}
+                          images={item.variant?.product?.images}
+                          size="square"
+                        />
+                      </LocalizedClientLink>
+                      <div className="flex flex-col justify-between flex-1">
+                        <div>
+                          <h3 className="text-base-regular truncate">
+                            <LocalizedClientLink href={`/products/${item.product_handle}`}>{item.title}</LocalizedClientLink>
+                          </h3>
+                          <LineItemOptions variant={item.variant} />
+                          <span>Množství: {item.quantity}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <LineItemPrice item={item} style="tight" currencyCode={cartState.currency_code} />
+                          <DeleteButton id={item.id}>Odebrat</DeleteButton>
                         </div>
                       </div>
-                    ))}
+                    </div>
+                  ))}
                 </div>
-                <div className="p-4 flex flex-col gap-y-4 text-small-regular">
-                  <div className="flex items-center justify-between">
-                    <span className="text-ui-fg-base font-semibold">
-                      Mezisoučet{" "}
-                      <span className="font-normal">(bez daní)</span>
-                    </span>
-                    <span
-                      className="text-large-semi"
-                      data-testid="cart-subtotal"
-                      data-value={subtotal}
-                    >
-                      {convertToLocale({
-                        amount: subtotal,
-                        currency_code: cartState.currency_code,
-                      })}
+                <div className="p-4 flex flex-col gap-y-4">
+                  <div className="flex justify-between">
+                    <span className="font-semibold">Mezisoučet</span>
+                    <span className="text-large-semi">
+                      {convertToLocale({ amount: subtotal, currency_code: cartState.currency_code })}
                     </span>
                   </div>
-                  <LocalizedClientLink href="/cart" passHref>
-                    <Button
-                      className="w-full"
-                      size="large"
-                      data-testid="go-to-cart-button"
-                    >
-                      Přejít do košíku
-                    </Button>
+                  <LocalizedClientLink href="/cart">
+                    <Button size="large" className="w-full">Přejít do košíku</Button>
                   </LocalizedClientLink>
                 </div>
               </>
             ) : (
-              <div>
-                <div className="flex py-16 flex-col gap-y-4 items-center justify-center">
-                  <div className="bg-gray-900 text-small-regular flex items-center justify-center w-6 h-6 rounded-full text-white">
-                    <span>0</span>
-                  </div>
-                  <span>Váš nákupní košík je prázdný.</span>
-                  <div>
-                    <LocalizedClientLink href="/store">
-                      <>
-                        <span className="sr-only">Přejít na stránku všech produktů</span>
-                        <Button onClick={close}>Prozkoumat produkty</Button>
-                      </>
-                    </LocalizedClientLink>
-                  </div>
+              <div className="flex flex-col items-center justify-center py-16 gap-y-4">
+                <div className="bg-gray-900 text-white rounded-full w-6 h-6 flex items-center justify-center">
+                  <span>0</span>
                 </div>
+                <span>Váš nákupní košík je prázdný.</span>
+                <LocalizedClientLink href="/store">
+                  <Button onClick={close}>Prozkoumat produkty</Button>
+                </LocalizedClientLink>
               </div>
             )}
           </PopoverPanel>
