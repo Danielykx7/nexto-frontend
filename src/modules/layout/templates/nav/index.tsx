@@ -1,4 +1,4 @@
-/* src/modules/layout/templates/nav/index.tsx */
+// src/modules/layout/templates/nav/index.tsx
 import { listRegions } from "@lib/data/regions"
 import { StoreRegion } from "@medusajs/types"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
@@ -6,8 +6,8 @@ import CartButton from "@modules/layout/components/cart-button"
 import SideMenu from "@modules/layout/components/side-menu"
 import { IconButton } from "@medusajs/ui"
 import { Menu as MenuIcon, User as UserIcon } from "lucide-react"
-// Import client-only SearchBox directly
-import SearchBox from "@modules/layout/components/search-box"
+// Relativní import klient‑side SearchBox
+import SearchBox from "@modules/components/search-box"
 
 export default async function Nav() {
   const regions: StoreRegion[] = await listRegions()
@@ -36,14 +36,14 @@ export default async function Nav() {
           Nexto
         </LocalizedClientLink>
 
-        {/* Vyhledávací pole (desktop) */}
+        {/* Search (desktop) */}
         <div className="hidden md:block flex-1 px-4">
           <SearchBox />
         </div>
 
-        {/* Účet + Košík */}
+        {/* Account + Cart */}
         <div className="hidden md:flex items-center gap-x-4">
-          {/* Účet */}
+          {/* Account */}
           <IconButton
             variant="transparent"
             size="large"
@@ -60,7 +60,7 @@ export default async function Nav() {
             </LocalizedClientLink>
           </IconButton>
 
-          {/* Košík */}
+          {/* Cart */}
           <div className="hover:bg-gray-100 rounded-md p-2 w-10 h-10 flex items-center justify-center">
             <CartButton />
           </div>
