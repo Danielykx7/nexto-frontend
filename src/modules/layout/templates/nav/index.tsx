@@ -1,8 +1,8 @@
-/* src/modules/layout/templates/nav/index.tsx */
+// src/modules/layout/templates/nav/index.tsx
 import { listRegions } from "@lib/data/regions"
 import { StoreRegion } from "@medusajs/types"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
-import SearchBox from "@modules/common/components/search-box"
+import NavSearch from "@modules/common/components/nav-search"
 import CartButton from "@modules/layout/components/cart-button"
 import SideMenu from "@modules/layout/components/side-menu"
 import { IconButton } from "@medusajs/ui"
@@ -37,7 +37,7 @@ export default async function Nav() {
 
         {/* Search (desktop) */}
         <div className="hidden md:block flex-1 px-4">
-          <SearchBox />
+          <NavSearch />
         </div>
 
         {/* Account + Cart */}
