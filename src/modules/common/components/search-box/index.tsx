@@ -3,65 +3,52 @@
 
 import { useRouter, useParams } from "next/navigation"
 import { useState, useRef } from "react"
-import Medusa from "@medusajs/js-sdk"
 import { IconButton } from "@medusajs/ui"
 import { Search } from "lucide-react"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
-// SDK instance (browser‑side)
-const medusa = new Medusa({
-  baseUrl: process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000",
-})
-
 export default function SearchBox() {
-  const router = useRouter()
-  const { countryCode = "" } = useParams<{ countryCode?: string }>()
-  const [query, setQuery] = useState("")
-  const [suggestions, setSuggestions] = useState<any[]>([])
-  const [open, setOpen] = useState(false)
-  const boxRef = useRef<HTMLDivElement>(null)
+  const router                   = useRouter()
+  const { countryCode = "" }     = useParams<{ countryCode?: string }>()
+  const [query, setQuery]        = useState("")
+  const [suggs, setSuggs]        = useState<any[]>([])
+  const [open, setOpen]          = useState(false)
+  const debounce = useRef<NodeJS.Timeout | null>(null)
 
-  // fetch via SDK → CORS safe
-  const fetchSuggestions = async (q?: string) => {
-    try {
-      const { products } = await medusa.products.list({
-        limit: 5,
-        ...(q ? { q } : { sort: "popularity" }),
-      })
-      setSuggestions(products)
-    } catch {
-      setSuggestions([])
-    }
+  // fetch helper
+  const fetchSuggestions = async (term = "") => {
+    const url = term
+      ? `/api/suggestions?q=${encodeURIComponent(term)}&limit=5`
+      : `/api/suggestions?limit=5`          // top sales_rank
+    const res  = await fetch(url, { cache: "no-store" })
+    const json = await res.json()
+    setSuggs(json.products || [])
   }
 
-  /* ========== handlers ========== */
-  const onFocus = () => {
-    setOpen(true)
-    fetchSuggestions()
-  }
+  /* handlers */
+  const onFocus  = () => { setOpen(true); fetchSuggestions("") }
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
     setQuery(val)
     setOpen(true)
-    fetchSuggestions(val.trim())
+
+    // debounce 300 ms
+    if (debounce.current) clearTimeout(debounce.current)
+    debounce.current = setTimeout(() => fetchSuggestions(val.trim()), 300)
   }
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const trimmed = query.trim()
-    if (trimmed) {
-      router.push(`/${countryCode}/search?query=${encodeURIComponent(trimmed)}`)
-      setOpen(false)
-    }
+    const q = query.trim()
+    if (q) router.push(`/${countryCode}/search?query=${encodeURIComponent(q)}`)
   }
 
   const onBlur = () => setTimeout(() => setOpen(false), 120)
 
-  /* ========== render ========== */
   return (
-    <div ref={boxRef} className="relative w-full max-w-md">
-      <form onSubmit={onSubmit} className="relative">
+    <div className="relative w-full max-w-md">
+      <form onSubmit={onSubmit}>
         <input
           value={query}
           onChange={onChange}
@@ -71,15 +58,15 @@ export default function SearchBox() {
           className="w-full pl-10 pr-4 py-2 rounded-md border border-ui-border-base focus:outline-none focus:border-ui-fg-base"
         />
         <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-          <IconButton type="submit" variant="transparent" size="small">
+          <IconButton type="submit" variant="transparent" size="small" aria-label="Hledat">
             <Search className="w-5 h-5 text-ui-fg-subtle" />
           </IconButton>
         </div>
       </form>
 
-      {open && suggestions.length > 0 && (
-        <ul className="absolute z-20 mt-1 w-full bg-white border border-ui-border-base rounded-md shadow-lg">
-          {suggestions.map((p) => (
+      {open && suggs.length > 0 && (
+        <ul className="absolute z-[60] mt-1 w-full bg-white border border-ui-border-base rounded-md shadow-lg max-h-80 overflow-y-auto">
+          {suggs.map((p) => (
             <li key={p.id}>
               <LocalizedClientLink
                 href={`/${countryCode}/products/${p.handle}`}
