@@ -1,12 +1,17 @@
-// src/modules/layout/templates/nav/index.tsx
+/* src/modules/layout/templates/nav/index.tsx */
+import dynamic from "next/dynamic"
 import { listRegions } from "@lib/data/regions"
 import { StoreRegion } from "@medusajs/types"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
-import NavSearch from "@modules/common/components/nav-search"
 import CartButton from "@modules/layout/components/cart-button"
 import SideMenu from "@modules/layout/components/side-menu"
 import { IconButton } from "@medusajs/ui"
 import { Menu as MenuIcon, User as UserIcon } from "lucide-react"
+
+// Dynamically load NavSearch as a client‑only component
+const NavSearch = dynamic(
+  () => import("@modules/common/components/nav-search")
+)
 
 export default async function Nav() {
   const regions: StoreRegion[] = await listRegions()

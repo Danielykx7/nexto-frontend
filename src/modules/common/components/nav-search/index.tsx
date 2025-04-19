@@ -1,14 +1,9 @@
-// src/modules/layout/components/nav-search/index.tsx
+// src/modules/common/components/nav-search/index.tsx
 "use client"
 
-import dynamic from "next/dynamic"
-
-// dynamicky načteme SearchBox, pouze na klientu
-const SearchBox = dynamic(
-  () => import("@modules/common/components/search-box"),
-  { ssr: false }
-)
+import SearchBox from "@modules/common/components/search-box"
 
 export default function NavSearch() {
   return <SearchBox />
 }
+

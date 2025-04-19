@@ -18,7 +18,7 @@ export default function SearchTemplate({ countryCode, searchQuery, page, sortBy 
     <div className="content-container py-8 flex flex-col md:flex-row gap-4">
       {/* Filtry */}
       <div className="w-full md:w-1/4">
-        <RefinementList collapseView="mobile" />
+        <RefinementList sortBy={"price_asc"} />
       </div>
 
       {/* Výsledky vyhledávání */}
