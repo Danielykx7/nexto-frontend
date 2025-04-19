@@ -3,82 +3,135 @@
 
 import { useRouter, useParams } from "next/navigation"
 import { useState, useRef } from "react"
-import { IconButton } from "@medusajs/ui"
+import { IconButton, Button } from "@medusajs/ui"
 import { Search } from "lucide-react"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import Thumbnail from "@modules/products/components/thumbnail"
+import { convertToLocale } from "@lib/util/money"
 
 export default function SearchBox() {
-  const router                   = useRouter()
-  const { countryCode = "" }     = useParams<{ countryCode?: string }>()
-  const [query, setQuery]        = useState("")
-  const [suggs, setSuggs]        = useState<any[]>([])
-  const [open, setOpen]          = useState(false)
-  const debounce = useRef<NodeJS.Timeout | null>(null)
+  const router = useRouter()
+  const params = useParams() as { countryCode?: string }
+  const countryCode = params.countryCode || ""
 
-  // fetch helper
-  const fetchSuggestions = async (term = "") => {
-    const url = term
-      ? `/api/suggestions?q=${encodeURIComponent(term)}&limit=5`
-      : `/api/suggestions?limit=5`          // top sales_rank
-    const res  = await fetch(url, { cache: "no-store" })
-    const json = await res.json()
-    setSuggs(json.products || [])
+  const [query, setQuery] = useState("")
+  const [suggestions, setSuggestions] = useState<any[]>([])
+  const [showDropdown, setShowDropdown] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const fetchSuggestions = async (q: string) => {
+    const base = `/api/suggestions`
+    const url = q.trim()
+      ? `${base}?limit=5&q=${encodeURIComponent(q)}`
+      : `${base}?limit=5`
+    try {
+      const res = await fetch(url, { cache: "no-store" })
+      if (!res.ok) throw new Error("Fetch failed")
+      const json = await res.json()
+      setSuggestions(json.products || [])
+    } catch {
+      setSuggestions([])
+    }
   }
 
-  /* handlers */
-  const onFocus  = () => { setOpen(true); fetchSuggestions("") }
-
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    setQuery(val)
-    setOpen(true)
-
-    // debounce 300 ms
-    if (debounce.current) clearTimeout(debounce.current)
-    debounce.current = setTimeout(() => fetchSuggestions(val.trim()), 300)
+  const handleFocus = () => {
+    setShowDropdown(true)
+    fetchSuggestions("")
   }
 
-  const onSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const q = e.target.value
+    setQuery(q)
+    setShowDropdown(true)
+    fetchSuggestions(q)
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const q = query.trim()
-    if (q) router.push(`/${countryCode}/search?query=${encodeURIComponent(q)}`)
+    const trimmed = query.trim()
+    if (trimmed) {
+      router.push(`/${countryCode}/search?query=${encodeURIComponent(trimmed)}`)
+      setShowDropdown(false)
+    }
   }
 
-  const onBlur = () => setTimeout(() => setOpen(false), 120)
+  const handleBlur = () => {
+    setTimeout(() => setShowDropdown(false), 100)
+  }
 
   return (
-    <div className="relative w-full max-w-md">
-      <form onSubmit={onSubmit}>
+    <div ref={containerRef} className="relative w-full max-w-md">
+      <form onSubmit={handleSubmit} className="relative">
         <input
-          value={query}
-          onChange={onChange}
-          onFocus={onFocus}
-          onBlur={onBlur}
+          type="text"
           placeholder="Hledat"
+          value={query}
+          onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           className="w-full pl-10 pr-4 py-2 rounded-md border border-ui-border-base focus:outline-none focus:border-ui-fg-base"
         />
         <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-          <IconButton type="submit" variant="transparent" size="small" aria-label="Hledat">
+          <IconButton
+            type="submit"
+            variant="transparent"
+            size="small"
+            aria-label="Hledat"
+          >
             <Search className="w-5 h-5 text-ui-fg-subtle" />
           </IconButton>
         </div>
       </form>
 
-      {open && suggs.length > 0 && (
-        <ul className="absolute z-[60] mt-1 w-full bg-white border border-ui-border-base rounded-md shadow-lg max-h-80 overflow-y-auto">
-          {suggs.map((p) => (
-            <li key={p.id}>
-              <LocalizedClientLink
-                href={`/${countryCode}/products/${p.handle}`}
-                className="block px-4 py-2 hover:bg-gray-100"
+      {showDropdown && suggestions.length > 0 && (
+        <ul className="absolute z-20 mt-1 w-full bg-white border border-ui-border-base rounded-md shadow-lg">
+          {suggestions.map((p) => {
+            const price = p.variants?.[0]?.prices?.[0]?.amount ?? 0
+            return (
+              <li
+                key={p.id}
+                className="flex items-center justify-between px-4 py-2 hover:bg-gray-100"
               >
-                {p.title}
-              </LocalizedClientLink>
-            </li>
-          ))}
+                <LocalizedClientLink
+                  href={`/products/${p.handle}`}
+                  className="flex items-center flex-1"
+                >
+                  <Thumbnail
+                    thumbnail={p.thumbnail}
+                    images={p.images}
+                    size="square"
+                    className="w-10 h-10 object-cover rounded mr-4"
+                  />
+                  <div className="flex flex-col overflow-hidden">
+                    <span className="text-sm font-medium truncate">
+                      {p.title}
+                    </span>
+                    <span className="text-xs text-ui-fg-subtle">
+                      {convertToLocale({
+                        amount: price,
+                        currency_code: p.region_currency_code ?? p.currency_code,
+                      })}
+                    </span>
+                  </div>
+                </LocalizedClientLink>
+                <Button
+                  variant="secondary"
+                  size="small"
+                  className="ml-4 whitespace-nowrap"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    // zde můžete zavolat váš add-to-cart kód
+                    // např. addToCart(p.id)
+                  }}
+                >
+                  Do košíku
+                </Button>
+              </li>
+            )
+          })}
           <li>
             <LocalizedClientLink
-              href={`/${countryCode}/store`}
+              href={`/store`}
               className="block text-center px-4 py-2 text-ui-fg-subtle hover:bg-gray-100"
             >
               Zobrazit všechny produkty
