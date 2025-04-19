@@ -1,25 +1,22 @@
 // src/app/api/suggestions/route.ts
 import { NextRequest, NextResponse } from "next/server"
+import { sdk } from "@lib/config"
+import { HttpTypes } from "@medusajs/types"
 
-const BACKEND =
-  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
-// Publishable key z .env.local
-const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY!
-if (!PUBLISHABLE_KEY) {
-  throw new Error("Missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY in .env.local")
-}
+const BACKEND         = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL!
+const PKEY            = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY!
+if (!PKEY) throw new Error("Chybí NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY v .env.local")
 
-/** Pomocník na získání region_id (jen jednou) */
 let DEFAULT_REGION_ID: string | null = null
-async function getDefaultRegionId() {
-  if (DEFAULT_REGION_ID) return DEFAULT_REGION_ID
-
-  const res = await fetch(`${BACKEND}/store/regions`, {
-    headers: { "x-publishable-api-key": PUBLISHABLE_KEY },
-    cache: "no-store",
+async function getDefaultRegionId(): Promise<string | null> {
+  if (DEFAULT_REGION_ID) {
+    return DEFAULT_REGION_ID
+  }
+  const res = await fetch(`${BACKEND}/store/regions?limit=1`, {
+    cache:   "no-store",
+    headers: { "x-publishable-api-key": PKEY },
   })
   if (!res.ok) return null
-
   const { regions } = await res.json()
   DEFAULT_REGION_ID = regions?.[0]?.id || null
   return DEFAULT_REGION_ID
@@ -27,28 +24,38 @@ async function getDefaultRegionId() {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const q     = searchParams.get("q")     ?? ""
-  const limit = searchParams.get("limit") ?? "5"
+  const q     = searchParams.get("q")     ?? undefined
+  const limit = parseInt(searchParams.get("limit") ?? "5", 10)
 
-  // vždy přidej region_id, aby ti Medusa nehodila 400
-  const regionId = await getDefaultRegionId()
+  const region_id = await getDefaultRegionId()
 
-  const params = new URLSearchParams({ limit })
-  if (q)        params.set("q", q)
-  if (regionId) params.set("region_id", regionId)
-
-  const url = `${BACKEND}/store/products?${params.toString()}`
-  console.log("▶︎ Fetching Suggestions:", url)
-
-  const res = await fetch(url, {
-    headers: { "x-publishable-api-key": PUBLISHABLE_KEY },
-    cache: "no-store",
-  })
-  if (!res.ok) {
-    console.warn("Store/products failed:", await res.text())
-    return NextResponse.json({ products: [] })
+  // Sestavíme parametry pro store/products
+  const query: Record<string, any> = {
+    limit,
+    ...(q         && { q }),
+    ...(region_id && { region_id }),
+    // Tohle jsou klíče, které “rozbalí” price i inventory_quantity
+    fields: [
+      "id",
+      "title",
+      "handle",
+      "thumbnail",
+      "*variants.calculated_price",
+      "*variants.inventory_quantity",
+    ].join(","),
   }
 
-  const { products } = await res.json()
-  return NextResponse.json({ products: products || [] })
+  // Načteme produkty přes sdk.client.fetch
+  const { products } = await sdk.client
+    .fetch<{ products: HttpTypes.StoreProduct[] }>(
+      "/store/products",
+      {
+        cache:  "no-store",
+        query,
+        headers: { "x-publishable-api-key": PKEY },
+      }
+    )
+    .catch(() => ({ products: [] }))
+
+  return NextResponse.json({ products })
 }

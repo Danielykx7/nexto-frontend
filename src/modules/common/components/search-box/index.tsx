@@ -52,17 +52,21 @@ export default function SearchBox() {
     const trimmed = query.trim()
     if (trimmed) {
       router.push(`/${countryCode}/search?query=${encodeURIComponent(trimmed)}`)
-      setShowDropdown(false)
+      // dropdown zůstane otevřený
     }
   }
 
-  const handleBlur = () => {
-    setTimeout(() => setShowDropdown(false), 100)
+  const handleBlur = (e: React.FocusEvent) => {
+    // pokud focus *přechází* na element uvnitř dropdownu, nenecháme zavřít
+    const to = e.relatedTarget as HTMLElement | null
+    if (containerRef.current?.contains(to)) {
+      return
+    }
+    setShowDropdown(false)
   }
 
   return (
     <div ref={containerRef} className="relative w-full max-w-md">
-      {/* input */}
       <form onSubmit={handleSubmit} className="relative">
         <input
           type="text"
@@ -85,14 +89,13 @@ export default function SearchBox() {
         </div>
       </form>
 
-      {/* dropdown */}
       {showDropdown && suggestions.length > 0 && (
         <ul className="absolute z-20 mt-1 w-full bg-white border border-ui-border-base rounded-md shadow-lg">
           {suggestions.map((p) => {
             const variant = p.variants?.[0]
-            const price = variant?.prices?.[0]?.amount ?? 0
-            const currency =
-              variant?.prices?.[0]?.currency_code ?? p.region_currency_code
+            const priceNum = variant.calculated_price.calculated_amount
+            const currency = variant.calculated_price.currency_code
+            const inventory = variant.inventory_quantity
 
             return (
               <li
@@ -103,12 +106,11 @@ export default function SearchBox() {
                   href={`/products/${p.handle}`}
                   className="flex items-center flex-1"
                 >
-                  {/* hranatý thumbnail */}
                   <Thumbnail
                     thumbnail={p.thumbnail}
                     images={p.images}
                     size="square"
-                    className="w-10 h-10 object-cover rounded-sm mr-4"
+                    className="w-10 h-10 object-cover mr-4 rounded-sm"
                   />
                   <div className="flex flex-col overflow-hidden">
                     <span className="text-sm font-medium truncate">
@@ -116,35 +118,42 @@ export default function SearchBox() {
                     </span>
                     <span className="text-xs text-ui-fg-subtle">
                       {convertToLocale({
-                        amount: price,
+                        amount: priceNum,
                         currency_code: currency,
                       })}
                     </span>
                   </div>
                 </LocalizedClientLink>
 
-                {/* tlačítko Do košíku */}
                 <Button
-                  variant="secondary"
+                  variant={inventory > 0 ? "secondary" : "ghost"}
                   size="small"
                   className="ml-4 whitespace-nowrap"
+                  disabled={inventory <= 0}
                   onClick={async (e) => {
-                    // zamezíme Navigaci při kliknutí na tlačítko
                     e.preventDefault()
-                    e.stopPropagation()
-                    await addToCart({
-                      variantId: variant.id,
-                      quantity: 1,
-                      countryCode,
-                    })
+                    if (inventory > 0) {
+                      // zobrazit loading
+                      e.currentTarget.disabled = true
+                      await addToCart({
+                        variantId: variant.id,
+                        quantity: 1,
+                        countryCode,
+                      })
+                      // animace fajfky
+                      e.currentTarget.innerText = "✓"
+                      setTimeout(() => {
+                        e.currentTarget.innerText = "Do košíku"
+                        e.currentTarget.disabled = false
+                      }, 1000)
+                    }
                   }}
                 >
-                  Do košíku
+                  {inventory > 0 ? "Do košíku" : "Není skladem"}
                 </Button>
               </li>
             )
           })}
-
           <li>
             <LocalizedClientLink
               href={`/${countryCode}/store`}
