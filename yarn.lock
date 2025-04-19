@@ -842,7 +842,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@medusajs/js-sdk@latest":
+"@medusajs/js-sdk@npm:^2.7.0":
   version: 2.7.0
   resolution: "@medusajs/js-sdk@npm:2.7.0"
   dependencies:
@@ -7266,7 +7266,7 @@ __metadata:
   dependencies:
     "@babel/core": ^7.17.5
     "@headlessui/react": ^2.2.0
-    "@medusajs/js-sdk": latest
+    "@medusajs/js-sdk": ^2.7.0
     "@medusajs/types": latest
     "@medusajs/ui": latest
     "@medusajs/ui-preset": latest
