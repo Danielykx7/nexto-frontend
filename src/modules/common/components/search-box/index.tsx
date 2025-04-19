@@ -2,9 +2,9 @@
 "use client"
 
 import { useRouter, useParams } from "next/navigation"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { IconButton, Button } from "@medusajs/ui"
-import { Search } from "lucide-react"
+import { Search, Loader, Check } from "lucide-react"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import Thumbnail from "@modules/products/components/thumbnail"
 import { convertToLocale } from "@lib/util/money"
@@ -12,57 +12,77 @@ import { addToCart } from "@lib/data/cart"
 
 export default function SearchBox() {
   const router = useRouter()
-  const params = useParams() as { countryCode?: string }
-  const countryCode = params.countryCode || ""
+  const { countryCode = "" } = (useParams() as { countryCode?: string }) || {}
 
   const [query, setQuery] = useState("")
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [actionStatus, setActionStatus] = useState<Record<string, "idle"|"loading"|"success">>({})
   const containerRef = useRef<HTMLDivElement>(null)
 
+  // zavření dropdownu klikem mimo
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [])
+
   const fetchSuggestions = async (q: string) => {
-    const base = `/api/suggestions`
-    const url = q.trim()
-      ? `${base}?limit=5&q=${encodeURIComponent(q)}`
-      : `${base}?limit=5`
+    // Otevřeme dropdown hned, aby uživatel viděl loading
+    setShowDropdown(true)
+    setIsLoading(true)
+
+    const base = "/api/suggestions"
+    const url = q.trim() ? `${base}?limit=5&q=${encodeURIComponent(q)}` : `${base}?limit=5`
     try {
       const res = await fetch(url, { cache: "no-store" })
-      if (!res.ok) throw new Error("Fetch failed")
+      if (!res.ok) throw new Error()
       const json = await res.json()
       setSuggestions(json.products || [])
     } catch {
       setSuggestions([])
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const handleFocus = () => {
-    setShowDropdown(true)
     fetchSuggestions("")
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const q = e.target.value
     setQuery(q)
-    setShowDropdown(true)
     fetchSuggestions(q)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const trimmed = query.trim()
-    if (trimmed) {
-      router.push(`/${countryCode}/search?query=${encodeURIComponent(trimmed)}`)
-      // dropdown zůstane otevřený
-    }
+    const t = query.trim()
+    if (t) router.push(`/${countryCode}/search?query=${encodeURIComponent(t)}`)
   }
 
   const handleBlur = (e: React.FocusEvent) => {
-    // pokud focus *přechází* na element uvnitř dropdownu, nenecháme zavřít
     const to = e.relatedTarget as HTMLElement | null
-    if (containerRef.current?.contains(to)) {
-      return
+    if (!containerRef.current?.contains(to)) {
+      setShowDropdown(false)
     }
-    setShowDropdown(false)
+  }
+
+  const handleAddToCart = async (variantId: string) => {
+    setActionStatus(s => ({ ...s, [variantId]: "loading" }))
+    try {
+      await addToCart({ variantId, quantity: 1, countryCode })
+      setActionStatus(s => ({ ...s, [variantId]: "success" }))
+      setTimeout(() => setActionStatus(s => ({ ...s, [variantId]: "idle" })), 1000)
+    } catch {
+      setActionStatus(s => ({ ...s, [variantId]: "idle" }))
+    }
   }
 
   return (
@@ -78,90 +98,88 @@ export default function SearchBox() {
           className="w-full pl-10 pr-4 py-2 rounded-md border border-ui-border-base focus:outline-none focus:border-ui-fg-base"
         />
         <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-          <IconButton
-            type="submit"
-            variant="transparent"
-            size="small"
-            aria-label="Hledat"
-          >
+          <IconButton type="submit" variant="transparent" size="small" aria-label="Hledat">
             <Search className="w-5 h-5 text-ui-fg-subtle" />
           </IconButton>
         </div>
       </form>
 
-      {showDropdown && suggestions.length > 0 && (
+      {showDropdown && (
         <ul className="absolute z-20 mt-1 w-full bg-white border border-ui-border-base rounded-md shadow-lg">
-          {suggestions.map((p) => {
-            const variant = p.variants?.[0]
-            const priceNum = variant.calculated_price.calculated_amount
-            const currency = variant.calculated_price.currency_code
-            const inventory = variant.inventory_quantity
+          {isLoading ? (
+            <li className="flex items-center justify-center px-4 py-6">
+              <Loader className="w-5 h-5 animate-spin text-ui-fg-subtle" />
+            </li>
+          ) : suggestions.length > 0 ? (
+            suggestions.map(p => {
+              const v         = p.variants?.[0]
+              const amount    = v.calculated_price.calculated_amount
+              const currency  = v.calculated_price.currency_code
+              const inventory = v.inventory_quantity
+              const status    = actionStatus[v.id] || "idle"
 
-            return (
-              <li
-                key={p.id}
-                className="flex items-center justify-between px-4 py-2 hover:bg-gray-100"
-              >
-                <LocalizedClientLink
-                  href={`/products/${p.handle}`}
-                  className="flex items-center flex-1"
+              return (
+                <li
+                  key={p.id}
+                  className="flex items-center justify-between px-4 py-2 hover:bg-gray-100"
                 >
-                  <Thumbnail
-                    thumbnail={p.thumbnail}
-                    images={p.images}
-                    size="square"
-                    className="w-10 h-10 object-cover mr-4 rounded-sm"
-                  />
-                  <div className="flex flex-col overflow-hidden">
-                    <span className="text-sm font-medium truncate">
-                      {p.title}
-                    </span>
-                    <span className="text-xs text-ui-fg-subtle">
-                      {convertToLocale({
-                        amount: priceNum,
-                        currency_code: currency,
-                      })}
-                    </span>
+                  <LocalizedClientLink
+                    href={`/products/${p.handle}`}
+                    className="flex items-center flex-1"
+                  >
+                    <Thumbnail
+                      thumbnail={p.thumbnail}
+                      images={p.images}
+                      size="square"
+                      className="w-10 h-10 object-cover mr-4 rounded-sm"
+                    />
+                    <div className="flex flex-col overflow-hidden">
+                      <span className="text-sm font-medium truncate">
+                        {p.title}
+                      </span>
+                      <span className="text-xs text-ui-fg-subtle">
+                        {convertToLocale({
+                          amount,
+                          currency_code: currency,
+                        })}
+                      </span>
+                    </div>
+                  </LocalizedClientLink>
+
+                  <div className="ml-4 whitespace-nowrap flex items-center">
+                    {inventory <= 0 ? (
+                      <Button variant="ghost" size="small" disabled>
+                        Není skladem
+                      </Button>
+                    ) : status === "loading" ? (
+                      <Button variant="secondary" size="small" disabled>
+                        <Loader className="w-4 h-4 animate-spin" />
+                      </Button>
+                    ) : status === "success" ? (
+                      <Button variant="secondary" size="small" disabled>
+                        <Check className="w-4 h-4 text-green-500" />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="secondary"
+                        size="small"
+                        onClick={e => {
+                          e.preventDefault()
+                          handleAddToCart(v.id)
+                        }}
+                      >
+                        Do košíku
+                      </Button>
+                    )}
                   </div>
-                </LocalizedClientLink>
-
-                <Button
-                  variant={inventory > 0 ? "secondary" : "ghost"}
-                  size="small"
-                  className="ml-4 whitespace-nowrap"
-                  disabled={inventory <= 0}
-                  onClick={async (e) => {
-                    e.preventDefault()
-                    if (inventory > 0) {
-                      // zobrazit loading
-                      e.currentTarget.disabled = true
-                      await addToCart({
-                        variantId: variant.id,
-                        quantity: 1,
-                        countryCode,
-                      })
-                      // animace fajfky
-                      e.currentTarget.innerText = "✓"
-                      setTimeout(() => {
-                        e.currentTarget.innerText = "Do košíku"
-                        e.currentTarget.disabled = false
-                      }, 1000)
-                    }
-                  }}
-                >
-                  {inventory > 0 ? "Do košíku" : "Není skladem"}
-                </Button>
-              </li>
-            )
-          })}
-          <li>
-            <LocalizedClientLink
-              href={`/${countryCode}/store`}
-              className="block text-center px-4 py-2 text-ui-fg-subtle hover:bg-gray-100"
-            >
-              Zobrazit všechny produkty
-            </LocalizedClientLink>
-          </li>
+                </li>
+              )
+            })
+          ) : (
+            <li className="px-4 py-2 text-center text-ui-fg-subtle">
+              Žádné výsledky
+            </li>
+          )}
         </ul>
       )}
     </div>
