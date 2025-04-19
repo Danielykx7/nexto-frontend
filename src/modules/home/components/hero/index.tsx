@@ -1,7 +1,12 @@
 /* src/modules/home/components/hero/index.tsx */
+"use client"
+
+import { useRouter } from "next/navigation"
 import { Button, Heading } from "@medusajs/ui"
 
 export default function Hero() {
+  const router = useRouter()
+
   return (
     <section className="relative h-[75vh] w-full overflow-hidden">
       {/* Pozadí */}
@@ -26,10 +31,19 @@ export default function Hero() {
           Objevte prémiové produkty vytvořené pro vás
         </Heading>
         <div className="flex space-x-4">
-          <Button variant="primary" size="large">
+          {/* Přesměrování na /store */}
+          <Button
+            variant="primary"
+            size="large"
+            onClick={() => router.push('/store')}
+          >
             Nakupovat nyní
           </Button>
-          <Button variant="secondary" size="large">
+          <Button
+            variant="secondary"
+            size="large"
+            onClick={() => router.push('/store')}
+          >
             Více informací
           </Button>
         </div>
