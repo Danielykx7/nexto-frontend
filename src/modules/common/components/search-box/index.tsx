@@ -8,6 +8,7 @@ import { Search } from "lucide-react"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import Thumbnail from "@modules/products/components/thumbnail"
 import { convertToLocale } from "@lib/util/money"
+import { addToCart } from "@lib/data/cart"
 
 export default function SearchBox() {
   const router = useRouter()
@@ -61,6 +62,7 @@ export default function SearchBox() {
 
   return (
     <div ref={containerRef} className="relative w-full max-w-md">
+      {/* input */}
       <form onSubmit={handleSubmit} className="relative">
         <input
           type="text"
@@ -83,10 +85,15 @@ export default function SearchBox() {
         </div>
       </form>
 
+      {/* dropdown */}
       {showDropdown && suggestions.length > 0 && (
         <ul className="absolute z-20 mt-1 w-full bg-white border border-ui-border-base rounded-md shadow-lg">
           {suggestions.map((p) => {
-            const price = p.variants?.[0]?.prices?.[0]?.amount ?? 0
+            const variant = p.variants?.[0]
+            const price = variant?.prices?.[0]?.amount ?? 0
+            const currency =
+              variant?.prices?.[0]?.currency_code ?? p.region_currency_code
+
             return (
               <li
                 key={p.id}
@@ -96,11 +103,12 @@ export default function SearchBox() {
                   href={`/products/${p.handle}`}
                   className="flex items-center flex-1"
                 >
+                  {/* hranatý thumbnail */}
                   <Thumbnail
                     thumbnail={p.thumbnail}
                     images={p.images}
                     size="square"
-                    className="w-10 h-10 object-cover rounded mr-4"
+                    className="w-10 h-10 object-cover rounded-sm mr-4"
                   />
                   <div className="flex flex-col overflow-hidden">
                     <span className="text-sm font-medium truncate">
@@ -109,19 +117,26 @@ export default function SearchBox() {
                     <span className="text-xs text-ui-fg-subtle">
                       {convertToLocale({
                         amount: price,
-                        currency_code: p.region_currency_code ?? p.currency_code,
+                        currency_code: currency,
                       })}
                     </span>
                   </div>
                 </LocalizedClientLink>
+
+                {/* tlačítko Do košíku */}
                 <Button
                   variant="secondary"
                   size="small"
                   className="ml-4 whitespace-nowrap"
-                  onClick={(e) => {
+                  onClick={async (e) => {
+                    // zamezíme Navigaci při kliknutí na tlačítko
                     e.preventDefault()
-                    // zde můžete zavolat váš add-to-cart kód
-                    // např. addToCart(p.id)
+                    e.stopPropagation()
+                    await addToCart({
+                      variantId: variant.id,
+                      quantity: 1,
+                      countryCode,
+                    })
                   }}
                 >
                   Do košíku
@@ -129,9 +144,10 @@ export default function SearchBox() {
               </li>
             )
           })}
+
           <li>
             <LocalizedClientLink
-              href={`/store`}
+              href={`/${countryCode}/store`}
               className="block text-center px-4 py-2 text-ui-fg-subtle hover:bg-gray-100"
             >
               Zobrazit všechny produkty
