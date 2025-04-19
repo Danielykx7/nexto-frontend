@@ -1,3 +1,4 @@
+// src/modules/store/templates/paginated-products.tsx
 import { listProductsWithSort } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
 import ProductPreview from "@modules/products/components/product-preview"
@@ -6,86 +7,47 @@ import { SortOptions } from "@modules/store/components/refinement-list/sort-prod
 
 const PRODUCT_LIMIT = 12
 
-type PaginatedProductsParams = {
-  limit: number
-  collection_id?: string[]
-  category_id?: string[]
-  id?: string[]
-  order?: string
+type PaginatedProductsProps = {
+  sortBy: SortOptions
+  page: number
+  countryCode: string
+  searchQuery?: string
 }
 
-export default async function PaginatedProducts({
-  sortBy,
-  page,
-  collectionId,
-  categoryId,
-  productsIds,
-  countryCode,
-}: {
-  sortBy?: SortOptions
-  page: number
-  collectionId?: string
-  categoryId?: string
-  productsIds?: string[]
-  countryCode: string
-}) {
-  const queryParams: PaginatedProductsParams = {
-    limit: 12,
-  }
-
-  if (collectionId) {
-    queryParams["collection_id"] = [collectionId]
-  }
-
-  if (categoryId) {
-    queryParams["category_id"] = [categoryId]
-  }
-
-  if (productsIds) {
-    queryParams["id"] = productsIds
-  }
-
-  if (sortBy === "created_at") {
-    queryParams["order"] = "created_at"
+export default async function PaginatedProducts({ sortBy, page, countryCode, searchQuery }: PaginatedProductsProps) {
+  // Build query params for API call
+  const queryParams: Record<string, any> = { limit: PRODUCT_LIMIT }
+  if (searchQuery) {
+    queryParams["q"] = searchQuery
   }
 
   const region = await getRegion(countryCode)
-
   if (!region) {
     return null
   }
 
-  let {
-    response: { products, count },
-  } = await listProductsWithSort({
+  // Fetch sorted + paginated products
+  const { response, nextPage } = await listProductsWithSort({
     page,
-    queryParams,
+    queryParams: {
+      ...queryParams,
+    },
     sortBy,
     countryCode,
   })
 
+  const { products, count } = response
   const totalPages = Math.ceil(count / PRODUCT_LIMIT)
 
   return (
     <>
-      <ul
-        className="grid grid-cols-2 w-full small:grid-cols-3 medium:grid-cols-4 gap-x-6 gap-y-8"
-        data-testid="products-list"
-      >
-        {products.map((p) => {
-          return (
-            <li key={p.id}>
-              <ProductPreview product={p} region={region} />
-            </li>
-          )
-        })}
-      </ul>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        {products.map((p) => (
+          <ProductPreview key={p.id} product={p} region={region} />
+        ))}
+      </div>
       {totalPages > 1 && (
-        <Pagination
-          data-testid="product-pagination"
-          page={page}
-          totalPages={totalPages}
-        />
+        <Pagination page={page} totalPages={totalPages} />
       )}
     </>
   )
