@@ -1,7 +1,7 @@
 // src/modules/common/components/search-box/index.tsx
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { useState, useRef } from "react"
 import { IconButton } from "@medusajs/ui"
 import { Search } from "lucide-react"
@@ -9,6 +9,8 @@ import LocalizedClientLink from "@modules/common/components/localized-client-lin
 
 export default function SearchBox() {
   const router = useRouter()
+  const params = useParams() as { countryCode?: string }
+  const countryCode = params.countryCode || ""
   const [query, setQuery] = useState("")
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
@@ -16,9 +18,11 @@ export default function SearchBox() {
 
   const fetchSuggestions = async (url: string) => {
     try {
-      const res = await fetch(url)
+      const base = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
+      const res = await fetch(`${base}${url}`, { cache: "no-store" })
+      if (!res.ok) throw new Error("Fetch failed")
       const json = await res.json()
-      setSuggestions(json.products)
+      setSuggestions(json.products || [])
     } catch {
       setSuggestions([])
     }
@@ -32,7 +36,7 @@ export default function SearchBox() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const q = e.target.value
     setQuery(q)
-    if (q.trim() === "") {
+    if (!q.trim()) {
       fetchSuggestions(`/store/products?limit=5&sort=popularity`)
     } else {
       fetchSuggestions(`/store/products?limit=5&q=${encodeURIComponent(q)}`)
@@ -44,13 +48,12 @@ export default function SearchBox() {
     e.preventDefault()
     const trimmed = query.trim()
     if (trimmed) {
-      router.push(`/store?query=${encodeURIComponent(trimmed)}`)
+      router.push(`/${countryCode}/search?query=${encodeURIComponent(trimmed)}`)
       setShowDropdown(false)
     }
   }
 
   const handleBlur = () => {
-    // Delay to allow clicks
     setTimeout(() => setShowDropdown(false), 100)
   }
 
@@ -82,7 +85,7 @@ export default function SearchBox() {
           {suggestions.map((p) => (
             <li key={p.id}>
               <LocalizedClientLink
-                href={`/products/${p.handle}`}
+                href={`/${countryCode}/products/${p.handle}`}
                 className="block px-4 py-2 hover:bg-gray-100"
               >
                 {p.title}
@@ -91,7 +94,7 @@ export default function SearchBox() {
           ))}
           <li>
             <LocalizedClientLink
-              href="/store"
+              href={`/${countryCode}/store`}
               className="block text-center px-4 py-2 text-ui-fg-subtle hover:bg-gray-100"
             >
               Zobrazit všechny produkty
