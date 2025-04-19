@@ -1,13 +1,12 @@
-// src/modules/layout/templates/nav/index.tsx
+/* src/modules/layout/templates/nav/index.tsx */
 import { listRegions } from "@lib/data/regions"
 import { StoreRegion } from "@medusajs/types"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import SearchBox from "@modules/common/components/search-box"
 import CartButton from "@modules/layout/components/cart-button"
 import SideMenu from "@modules/layout/components/side-menu"
 import { IconButton } from "@medusajs/ui"
 import { Menu as MenuIcon, User as UserIcon } from "lucide-react"
-// Relativní import klient‑side SearchBox
-import SearchBox from "@modules/components/search-box"
 
 export default async function Nav() {
   const regions: StoreRegion[] = await listRegions()
