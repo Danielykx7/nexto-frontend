@@ -1,5 +1,6 @@
 import { HttpTypes } from "@medusajs/types"
 import { Text } from "@medusajs/ui"
+import { formatFulfillmentStatus, formatPaymentStatus } from "@lib/util/format-status"
 
 type OrderDetailsProps = {
   order: HttpTypes.StoreOrder
@@ -28,7 +29,11 @@ const OrderDetails = ({ order, showStatus }: OrderDetailsProps) => {
       <Text className="mt-2">
         Datum objednávky:{" "}
         <span data-testid="order-date">
-          {new Date(order.created_at).toDateString()}
+          {new Date(order.created_at).toLocaleDateString("cs-CZ", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })}
         </span>
       </Text>
       <Text className="mt-2 text-ui-fg-interactive">
@@ -40,18 +45,14 @@ const OrderDetails = ({ order, showStatus }: OrderDetailsProps) => {
           <>
             <Text>
               Stav objednávky:{" "}
-              <span className="text-ui-fg-subtle " data-testid="order-status">
-                {/* TODO: Zkontrolujte, odkud by měly stavy pocházet */}
-                {/* {formatStatus(order.fulfillment_status)} */}
+              <span className="text-ui-fg-subtle" data-testid="order-status">
+                {formatFulfillmentStatus(order.fulfillment_status)}
               </span>
             </Text>
             <Text>
               Stav platby:{" "}
-              <span
-                className="text-ui-fg-subtle "
-                sata-testid="order-payment-status"
-              >
-                {/* {formatStatus(order.payment_status)} */}
+              <span className="text-ui-fg-subtle" data-testid="order-payment-status">
+                {formatPaymentStatus(order.payment_status)}
               </span>
             </Text>
           </>

@@ -33,7 +33,6 @@ export default function SearchBox() {
   }, [])
 
   const fetchSuggestions = async (q: string) => {
-    // Otevřeme dropdown hned, aby uživatel viděl loading
     setShowDropdown(true)
     setIsLoading(true)
 
@@ -180,6 +179,17 @@ export default function SearchBox() {
               Žádné výsledky
             </li>
           )}
+          {/* přidáno: odkaz na všechny produkty */}
+          <li className="px-4 py-2">
+            <Button
+              variant="secondary"
+              size="small"
+              className="w-full"
+              onClick={() => router.push(`/store`)}
+            >
+              Zobrazit všechny produkty
+            </Button>
+          </li>
         </ul>
       )}
     </div>

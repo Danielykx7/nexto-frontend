@@ -4,7 +4,7 @@
 import { Popover, PopoverPanel, Transition } from "@headlessui/react"
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
-import { Badge, Button } from "@medusajs/ui"
+import { Badge, Button, Text } from "@medusajs/ui"
 import DeleteButton from "@modules/common/components/delete-button"
 import LineItemOptions from "@modules/common/components/line-item-options"
 import LineItemPrice from "@modules/common/components/line-item-price"
@@ -22,6 +22,7 @@ const CartDropdown = ({ cart: cartState }: { cart?: HttpTypes.StoreCart | null }
 
   const totalItems = cartState?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0
   const subtotal = cartState?.subtotal ?? 0
+  const totalWithTax = cartState?.total ?? subtotal + (cartState?.tax_total ?? 0)
   const itemRef = useRef<number>(totalItems)
 
   const open = () => setOpenDropdown(true)
@@ -38,11 +39,7 @@ const CartDropdown = ({ cart: cartState }: { cart?: HttpTypes.StoreCart | null }
     open()
   }
 
-  useEffect(() => {
-    return () => {
-      if (activeTimer) clearTimeout(activeTimer)
-    }
-  }, [activeTimer])
+  useEffect(() => () => activeTimer && clearTimeout(activeTimer), [activeTimer])
 
   useEffect(() => {
     if (itemRef.current !== totalItems && !pathname.includes("/cart")) {
@@ -54,7 +51,6 @@ const CartDropdown = ({ cart: cartState }: { cart?: HttpTypes.StoreCart | null }
   return (
     <div className="relative h-full" onMouseEnter={openAndCancel} onMouseLeave={close}>
       <Popover className="relative h-full">
-        {/* Trigger: Popover.Button with icon and badge; click navigates to cart */}
         <Popover.Button
           className="h-full flex items-center justify-center relative px-2 text-ui-fg-subtle hover:text-ui-fg-base"
           aria-label={`Košík (${totalItems})`}
@@ -100,11 +96,11 @@ const CartDropdown = ({ cart: cartState }: { cart?: HttpTypes.StoreCart | null }
                       </LocalizedClientLink>
                       <div className="flex flex-col justify-between flex-1">
                         <div>
-                          <h3 className="text-base-regular truncate">
-                            <LocalizedClientLink href={`/products/${item.product_handle}`}>{item.title}</LocalizedClientLink>
-                          </h3>
-                          <LineItemOptions variant={item.variant} />
-                          <span>Množství: {item.quantity}</span>
+                          <Text className="txt-medium-plus text-ui-fg-base truncate" data-testid="product-title">
+                            {item.product_title}
+                          </Text>
+                          <LineItemOptions variant={item.variant} data-testid="product-variant" />
+                          <span className="text-small-regular">Množství: {item.quantity}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <LineItemPrice item={item} style="tight" currencyCode={cartState.currency_code} />
@@ -116,9 +112,9 @@ const CartDropdown = ({ cart: cartState }: { cart?: HttpTypes.StoreCart | null }
                 </div>
                 <div className="p-4 flex flex-col gap-y-4">
                   <div className="flex justify-between">
-                    <span className="font-semibold">Mezisoučet</span>
+                    <span className="font-semibold">Celkem (vč. DPH)</span>
                     <span className="text-large-semi">
-                      {convertToLocale({ amount: subtotal, currency_code: cartState.currency_code })}
+                      {convertToLocale({ amount: totalWithTax, currency_code: cartState.currency_code })}
                     </span>
                   </div>
                   <LocalizedClientLink href="/cart">

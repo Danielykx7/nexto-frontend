@@ -155,10 +155,10 @@ export default function ProductActions({
           data-testid="add-product-button"
         >
           {!selectedVariant && !options
-            ? "Select variant"
+            ? "Vyberte variantu"
             : !inStock || !isValidVariant
-            ? "Out of stock"
-            : "Add to cart"}
+            ? "Není skladem"
+            : "Přidat do košíku"}
         </Button>
         <MobileActions
           product={product}

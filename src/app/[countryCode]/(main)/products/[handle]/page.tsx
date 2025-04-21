@@ -19,7 +19,7 @@ export async function generateStaticParams() {
     }
 
     const products = await listProducts({
-      countryCode: "US",
+      countryCode: "CZ",
       queryParams: { fields: "handle" },
     }).then(({ response }) => response.products)
 
@@ -61,10 +61,10 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   }
 
   return {
-    title: `${product.title} | Medusa Store`,
+    title: `${product.title} | Nexto`,
     description: `${product.title}`,
     openGraph: {
-      title: `${product.title} | Medusa Store`,
+      title: `${product.title} | Nexto`,
       description: `${product.title}`,
       images: product.thumbnail ? [product.thumbnail] : [],
     },

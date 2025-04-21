@@ -94,7 +94,11 @@ const Overview = ({ customer, orders }: OverviewProps) => {
                                 Celková částka
                               </span>
                               <span data-testid="order-created-date">
-                                {new Date(order.created_at).toDateString()}
+                                {new Date(order.created_at).toLocaleDateString("cs-CZ", {
+                                  day: "numeric",
+                                  month: "long",
+                                  year: "numeric",
+                                })}
                               </span>
                               <span
                                 data-testid="order-id"

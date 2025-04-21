@@ -22,7 +22,7 @@ const AccountInfo = ({
   isSuccess,
   isError,
   clearState,
-  errorMessage = "An error occurred, please try again",
+  errorMessage = "Došlo k chybě, zkuste to prosím znovu.",
   children,
   'data-testid': dataTestid
 }: AccountInfoProps) => {
@@ -63,7 +63,7 @@ const AccountInfo = ({
             data-testid="edit-button"
             data-active={state}
           >
-            {state ? "Cancel" : "Edit"}
+            {state ? "Zrušit" : "Upravit"}
           </Button>
         </div>
       </div>
@@ -82,7 +82,7 @@ const AccountInfo = ({
           data-testid="success-message"
         >
           <Badge className="p-2 my-4" color="green">
-            <span>{label} updated succesfully</span>
+            <span>{label} - úspěšně aktualizováno.</span>
           </Badge>
         </Disclosure.Panel>
       </Disclosure>
@@ -126,7 +126,7 @@ const AccountInfo = ({
                 type="submit"
                 data-testid="save-button"
               >
-                Save changes
+                Uložit změny
               </Button>
             </div>
           </div>
