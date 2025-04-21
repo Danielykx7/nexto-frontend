@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { Table, Text, clx } from "@medusajs/ui"
 import { updateLineItem } from "@lib/data/cart"
 import { HttpTypes } from "@medusajs/types"
@@ -12,7 +13,9 @@ import LineItemUnitPrice from "@modules/common/components/line-item-unit-price"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import Spinner from "@modules/common/icons/spinner"
 import Thumbnail from "@modules/products/components/thumbnail"
-import { useState } from "react"
+
+// import hooku relativně
+import { useInventory } from "@lib/hooks/use-inventory"
 
 type ItemProps = {
   item: HttpTypes.StoreCartLineItem
@@ -20,9 +23,18 @@ type ItemProps = {
   currencyCode: string
 }
 
+const DEFAULT_MAX = 10
+
 const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
   const [updating, setUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // dotáhneme skladovou dostupnost pomocí obou ID
+  const stock = useInventory(item.product_id, item.variant_id)
+
+  const available = item.variant?.manage_inventory
+    ? stock
+    : DEFAULT_MAX
 
   const changeQuantity = async (quantity: number) => {
     setError(null)
@@ -32,17 +44,9 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
       lineId: item.id,
       quantity,
     })
-      .catch((err) => {
-        setError(err.message)
-      })
-      .finally(() => {
-        setUpdating(false)
-      })
+      .catch((err) => setError(err.message))
+      .finally(() => setUpdating(false))
   }
-
-  // TODO: Update this to grab the actual max inventory
-  const maxQtyFromInventory = 10
-  const maxQuantity = item.variant?.manage_inventory ? 10 : maxQtyFromInventory
 
   return (
     <Table.Row className="w-full" data-testid="product-row">
@@ -76,28 +80,20 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
         <Table.Cell>
           <div className="flex gap-2 items-center w-28">
             <DeleteButton id={item.id} data-testid="product-delete-button" />
+
             <CartItemSelect
               value={item.quantity}
-              onChange={(value) => changeQuantity(parseInt(value.target.value))}
+              onChange={(e) => changeQuantity(parseInt(e.target.value, 10))}
               className="w-14 h-10 p-4"
               data-testid="product-select-button"
             >
-              {/* TODO: Update this with the v2 way of managing inventory */}
-              {Array.from(
-                {
-                  length: Math.min(maxQuantity, 10),
-                },
-                (_, i) => (
-                  <option value={i + 1} key={i}>
-                    {i + 1}
-                  </option>
-                )
-              )}
-
-              <option value={1} key={1}>
-                1
-              </option>
+              {Array.from({ length: available }, (_, i) => (
+                <option key={i} value={i + 1}>
+                  {i + 1}
+                </option>
+              ))}
             </CartItemSelect>
+
             {updating && <Spinner />}
           </div>
           <ErrorMessage error={error} data-testid="product-error-message" />
@@ -122,7 +118,7 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
         >
           {type === "preview" && (
             <span className="flex gap-x-1 ">
-              <Text className="text-ui-fg-muted">{item.quantity}x </Text>
+              <Text className="text-ui-fg-muted">{item.quantity}× </Text>
               <LineItemUnitPrice
                 item={item}
                 style="tight"
