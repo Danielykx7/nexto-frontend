@@ -1,4 +1,3 @@
-// src/modules/cart/components/Item.tsx
 "use client"
 
 import { Table, Text, clx } from "@medusajs/ui"
@@ -26,11 +25,6 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
   const [error, setError] = useState<string | null>(null)
 
   const changeQuantity = async (quantity: number) => {
-    // prevent exceeding inventory
-    if (item.variant?.manage_inventory && quantity > (item.variant.inventory_quantity || 0)) {
-      setError("Nelze přidat více než je na skladě.")
-      return
-    }
     setError(null)
     setUpdating(true)
 
@@ -46,13 +40,9 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
       })
   }
 
-  // Determine max quantity based on inventory
-  const inventoryQty = item.variant?.inventory_quantity ?? 0
-  // Ensure dropdown shows at least current quantity
-  const currentQty = item.quantity
-  const maxQuantity = item.variant?.manage_inventory
-    ? Math.max(inventoryQty, currentQty)
-    : Math.max(10, currentQty)
+  // TODO: Update this to grab the actual max inventory
+  const maxQtyFromInventory = 10
+  const maxQuantity = item.variant?.manage_inventory ? 10 : maxQtyFromInventory
 
   return (
     <Table.Row className="w-full" data-testid="product-row">
@@ -88,15 +78,25 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
             <DeleteButton id={item.id} data-testid="product-delete-button" />
             <CartItemSelect
               value={item.quantity}
-              onChange={(e) => changeQuantity(parseInt(e.target.value, 10))}
+              onChange={(value) => changeQuantity(parseInt(value.target.value))}
               className="w-14 h-10 p-4"
               data-testid="product-select-button"
             >
-              {Array.from({ length: maxQuantity }, (_, i) => (
-                <option value={i + 1} key={i + 1}>
-                  {i + 1}
-                </option>
-              ))}
+              {/* TODO: Update this with the v2 way of managing inventory */}
+              {Array.from(
+                {
+                  length: Math.min(maxQuantity, 10),
+                },
+                (_, i) => (
+                  <option value={i + 1} key={i}>
+                    {i + 1}
+                  </option>
+                )
+              )}
+
+              <option value={1} key={1}>
+                1
+              </option>
             </CartItemSelect>
             {updating && <Spinner />}
           </div>
