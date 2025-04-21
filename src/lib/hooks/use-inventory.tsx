@@ -21,8 +21,6 @@ export const useInventory = (
       return
     }
 
-    console.log("[useInventory] fetching inventory for", productId, variantId)
-
     sdk.store.product
       .retrieve(productId, {
         // get only inventory_quantity for variants
@@ -31,11 +29,9 @@ export const useInventory = (
       .then(({ product }) => {
         const found = product.variants?.find((v) => v.id === variantId)
         const qty = found?.inventory_quantity ?? 0
-        console.log("[useInventory] got inventory_quantity", qty)
         setStock(qty)
       })
       .catch((error) => {
-        console.error("[useInventory] error fetching inventory", error)
         setStock(0)
       })
   }, [productId, variantId])
