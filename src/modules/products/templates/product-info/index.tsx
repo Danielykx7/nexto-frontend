@@ -3,6 +3,7 @@ import React from "react"
 import { HttpTypes } from "@medusajs/types"
 import { Heading, Text } from "@medusajs/ui"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import CategoriesList from "@modules/products/components/categories-list"
 
 // Helper: build breadcrumb chain
 const buildCrumbs = (
@@ -31,6 +32,10 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product, countryCode }) => {
 
   return (
     <div id="product-info" className="mb-6">
+      <div className="text-sm text-gray-600 mb-4">
+      {/* Breadcrumbs */}
+      <CategoriesList categories={product.categories || []} />
+      </div>
       {/* Collection */}
       {product.collection && (
         <div className="text-sm text-gray-600 mb-1">

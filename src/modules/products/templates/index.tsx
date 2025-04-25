@@ -36,7 +36,6 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({ product, region, coun
           {/* Right: Info, Actions, Promo, Stock, Tags */}
           <div className="w-full lg:w-1/3 flex flex-col gap-y-6">
             {/* Product basic info */}
-            <CategoriesList categories={product.categories || []} />
             <ProductInfo product={product} countryCode={countryCode} />
 
             {/* Add to Cart + Variant Selection */}

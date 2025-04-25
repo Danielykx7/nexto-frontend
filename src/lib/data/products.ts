@@ -31,66 +31,43 @@ export const listProducts = async ({
   const _pageParam = Math.max(pageParam, 1)
   const offset = _pageParam === 1 ? 0 : (_pageParam - 1) * limit
 
-  let region: HttpTypes.StoreRegion | undefined | null
-
-  if (countryCode) {
-    region = await getRegion(countryCode)
-  } else {
-    region = await retrieveRegion(regionId!)
-  }
+  let region = countryCode
+    ? await getRegion(countryCode)
+    : await retrieveRegion(regionId!)
 
   if (!region) {
-    return {
-      response: { products: [], count: 0 },
-      nextPage: null,
+    return { response: { products: [], count: 0 }, nextPage: null }
+  }
+
+  const headers = { ...(await getAuthHeaders()) }
+  const next = { ...(await getCacheOptions("products")) }
+
+  const { products, count } = await sdk.client.fetch<{
+    products: HttpTypes.StoreProduct[]
+    count: number
+  }>(
+    `/store/products`,
+    {
+      method: "GET",
+      query: {
+        limit,
+        offset,
+        region_id: region.id,
+        // +categories i +variants.inventory_quantity
+        fields:
+          "*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags,+categories",
+        ...queryParams,
+      },
+      headers,
+      next,
+      cache: "force-cache",
     }
-  }
+  )
 
-  const headers = {
-    ...(await getAuthHeaders()),
-  }
-
-  const next = {
-    ...(await getCacheOptions("products")),
-  }
-
-  return sdk.client
-    .fetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
-      `/store/products`,
-      {
-        method: "GET",
-        query: {
-          limit,
-          offset,
-          region_id: region.id,
-          // přidáno +categories, aby se vrátilo product.categories
-          fields:
-            "*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags,+categories",
-          ...queryParams,
-        },
-        headers,
-        next,
-        cache: "force-cache",
-      }
-    )
-    .then(({ products, count }) => {
-      const nextPage = count > offset + limit ? pageParam + 1 : null
-
-      return {
-        response: {
-          products,
-          count,
-        },
-        nextPage,
-        queryParams,
-      }
-    })
+  const nextPage = count > offset + limit ? pageParam + 1 : null
+  return { response: { products, count }, nextPage, queryParams }
 }
 
-/**
- * This will fetch 100 products to the Next.js cache and sort them based on the sortBy parameter.
- * It will then return the paginated products based on the page and limit parameters.
- */
 export const listProductsWithSort = async ({
   page = 0,
   queryParams,
@@ -101,63 +78,35 @@ export const listProductsWithSort = async ({
   queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams
   sortBy?: SortOptions
   countryCode: string
-}): Promise<{
-  response: { products: HttpTypes.StoreProduct[]; count: number }
-  nextPage: number | null
-  queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams
-}> => {
+}) => {
   const limit = queryParams?.limit || 12
-
   const {
     response: { products, count },
   } = await listProducts({
     pageParam: 0,
-    queryParams: {
-      ...queryParams,
-      limit: 100,
-    },
+    queryParams: { ...queryParams, limit: 100 },
     countryCode,
   })
 
-  const sortedProducts = sortProducts(products, sortBy)
-  const pageParam = (page - 1) * limit
-  const nextPage = count > pageParam + limit ? pageParam + limit : null
-  const paginatedProducts = sortedProducts.slice(pageParam, pageParam + limit)
+  const sorted = sortProducts(products, sortBy)
+  const start = (page - 1) * limit
+  const paginated = sorted.slice(start, start + limit)
+  const nextPage = count > start + limit ? page + 1 : null
 
-  return {
-    response: {
-      products: paginatedProducts,
-      count,
-    },
-    nextPage,
-    queryParams,
-  }
+  return { response: { products: paginated, count }, nextPage, queryParams }
 }
 
 /**
- * Načte jeden produkt podle handle včetně kategorií.
+ * Načte jeden produkt podle handle včetně inventory a variant,
+ * ale bez kategorií – ty si stáhneme zvlášť.
  */
 export const getProductByHandle = async (
-  handle: string
-): Promise<HttpTypes.StoreProduct & { categories?: HttpTypes.StoreProductCategory[] }> => {
-  const next = {
-    ...(await getCacheOptions("products")),
-  }
-
-  const { products } = await sdk.client.fetch<{
-    products: (HttpTypes.StoreProduct & {
-      categories?: HttpTypes.StoreProductCategory[]
-    })[]
-  }>(`/store/products`, {
-    method: "GET",
-    query: {
-      handle,
-      // klíčové, aby se k produktu vrátilo pole categories
-      expand: "categories",
-    },
-    next,
-    cache: "force-cache",
+  handle: string,
+  countryCode: string
+): Promise<HttpTypes.StoreProduct | undefined> => {
+  const { response } = await listProducts({
+    countryCode,
+    queryParams: { handle, limit: 1 },
   })
-
-  return products[0]
+  return response.products[0]
 }
