@@ -11,23 +11,22 @@ type ProductInfoProps = {
 const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
   return (
     <div id="product-info" className="mb-6">
-      {/* 1) Breadcrumb kategorií */}
-      {product.categories?.length > 0 && (
-        <nav className="text-sm text-gray-500 mb-2">
-          {product.categories.map((cat, i) => (
-            <span key={cat.id}>
-              <LocalizedClientLink
-                href={`/c/${cat.handle}`}
-                className="underline hover:text-ui-fg-base"
-              >
-                {cat.name}
+      {/* 1) Category Breadcrumb */}
+      {product.categories && product.categories.length > 0 && (
+        <div className="mb-2 flex items-center text-ui-fg-muted">
+          <LocalizedClientLink href="/products">
+            <Text className="text-xs hover:underline">Products</Text>
+          </LocalizedClientLink>
+          {product.categories.map((category, index) => (
+            <React.Fragment key={category.id}>
+              <Text className="text-xs mx-1">/</Text>
+              <LocalizedClientLink href={`/categories/${category.handle}`}>
+                <Text className="text-xs hover:underline">{category.name}</Text>
               </LocalizedClientLink>
-              {i < product.categories.length - 1 && " / "}
-            </span>
+            </React.Fragment>
           ))}
-        </nav>
+        </div>
       )}
-
       {/* 2) Kolekce */}
       {product.collection && (
         <div className="text-sm text-gray-600 mb-1">
