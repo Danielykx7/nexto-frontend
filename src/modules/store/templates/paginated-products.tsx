@@ -12,13 +12,29 @@ type PaginatedProductsProps = {
   page: number
   countryCode: string
   searchQuery?: string
+  // Nové props pro filtrování podle kategorií
+  categoryId?: string
+  categoryChildren?: { id: string }[]
 }
 
-export default async function PaginatedProducts({ sortBy, page, countryCode, searchQuery }: PaginatedProductsProps) {
-  // Build query params for API call
+export default async function PaginatedProducts({
+  sortBy,
+  page,
+  countryCode,
+  searchQuery,
+  categoryId,
+  categoryChildren,
+}: PaginatedProductsProps) {
   const queryParams: Record<string, any> = { limit: PRODUCT_LIMIT }
+
   if (searchQuery) {
     queryParams["q"] = searchQuery
+  }
+
+  // Přidání filtrování podle kategorie a jejích podkategorií
+  if (categoryId) {
+    const ids = [categoryId, ...(categoryChildren?.map(c => c.id) || [])]
+    queryParams["category_id[]"] = ids
   }
 
   const region = await getRegion(countryCode)
@@ -26,12 +42,9 @@ export default async function PaginatedProducts({ sortBy, page, countryCode, sea
     return null
   }
 
-  // Fetch sorted + paginated products
   const { response, nextPage } = await listProductsWithSort({
     page,
-    queryParams: {
-      ...queryParams,
-    },
+    queryParams,
     sortBy,
     countryCode,
   })
@@ -46,9 +59,7 @@ export default async function PaginatedProducts({ sortBy, page, countryCode, sea
           <ProductPreview key={p.id} product={p} region={region} />
         ))}
       </div>
-      {totalPages > 1 && (
-        <Pagination page={page} totalPages={totalPages} />
-      )}
+      {totalPages > 1 && <Pagination page={page} totalPages={totalPages} />}
     </>
   )
 }

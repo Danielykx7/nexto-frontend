@@ -8,6 +8,7 @@ import SkeletonRelatedProducts from "@modules/skeletons/templates/skeleton-relat
 import { notFound } from "next/navigation"
 import ProductActionsWrapper from "./product-actions-wrapper"
 import { HttpTypes } from "@medusajs/types"
+import CategoriesList from "@modules/products/components/categories-list"
 
 interface ProductTemplateProps {
   product: HttpTypes.StoreProduct & { categories?: HttpTypes.StoreProductCategory[] }
@@ -22,6 +23,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({ product, region, coun
 
   return (
     <>
+      
       {/* Main section: gallery left, info/actions right */}
       <div className="content-container py-8">
         <div className="flex flex-col lg:flex-row lg:items-start gap-8">
@@ -34,6 +36,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({ product, region, coun
           {/* Right: Info, Actions, Promo, Stock, Tags */}
           <div className="w-full lg:w-1/3 flex flex-col gap-y-6">
             {/* Product basic info */}
+            <CategoriesList categories={product.categories || []} />
             <ProductInfo product={product} countryCode={countryCode} />
 
             {/* Add to Cart + Variant Selection */}

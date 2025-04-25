@@ -1,3 +1,4 @@
+// src/app/products/[handle]/page.tsx
 import { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { listProducts } from "@lib/data/products"

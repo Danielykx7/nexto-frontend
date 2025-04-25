@@ -1,3 +1,4 @@
+// src/lib/data/products.ts
 "use server"
 
 import { sdk } from "@lib/config"
@@ -28,7 +29,7 @@ export const listProducts = async ({
 
   const limit = queryParams?.limit || 12
   const _pageParam = Math.max(pageParam, 1)
-  const offset = (_pageParam === 1) ? 0 : (_pageParam - 1) * limit;
+  const offset = _pageParam === 1 ? 0 : (_pageParam - 1) * limit
 
   let region: HttpTypes.StoreRegion | undefined | null
 
@@ -61,9 +62,10 @@ export const listProducts = async ({
         query: {
           limit,
           offset,
-          region_id: region?.id,
+          region_id: region.id,
+          // přidáno +categories, aby se vrátilo product.categories
           fields:
-            "*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags",
+            "*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags,+categories",
           ...queryParams,
         },
         headers,
@@ -79,7 +81,7 @@ export const listProducts = async ({
           products,
           count,
         },
-        nextPage: nextPage,
+        nextPage,
         queryParams,
       }
     })
@@ -118,11 +120,8 @@ export const listProductsWithSort = async ({
   })
 
   const sortedProducts = sortProducts(products, sortBy)
-
   const pageParam = (page - 1) * limit
-
   const nextPage = count > pageParam + limit ? pageParam + limit : null
-
   const paginatedProducts = sortedProducts.slice(pageParam, pageParam + limit)
 
   return {
@@ -133,4 +132,32 @@ export const listProductsWithSort = async ({
     nextPage,
     queryParams,
   }
+}
+
+/**
+ * Načte jeden produkt podle handle včetně kategorií.
+ */
+export const getProductByHandle = async (
+  handle: string
+): Promise<HttpTypes.StoreProduct & { categories?: HttpTypes.StoreProductCategory[] }> => {
+  const next = {
+    ...(await getCacheOptions("products")),
+  }
+
+  const { products } = await sdk.client.fetch<{
+    products: (HttpTypes.StoreProduct & {
+      categories?: HttpTypes.StoreProductCategory[]
+    })[]
+  }>(`/store/products`, {
+    method: "GET",
+    query: {
+      handle,
+      // klíčové, aby se k produktu vrátilo pole categories
+      expand: "categories",
+    },
+    next,
+    cache: "force-cache",
+  })
+
+  return products[0]
 }
