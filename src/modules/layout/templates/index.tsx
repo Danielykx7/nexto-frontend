@@ -1,15 +1,23 @@
+// src/modules/layout/templates/index.tsx
 import React from "react"
 
-import Footer from "@modules/layout/templates/footer"
 import Nav from "@modules/layout/templates/nav"
+import HeaderMenu from "@modules/layout/templates/header-menu"
+import Footer from "@modules/layout/templates/footer"
 
-const Layout: React.FC<{
-  children: React.ReactNode
-}> = ({ children }) => {
+const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div>
+      {/* Hlavní navigace */}
       <Nav />
-      <main className="relative">{children}</main>
+
+      {/* Mega-menu kategorií pod navigací */}
+      <HeaderMenu />
+
+      <main className="relative">
+        {children}
+      </main>
+
       <Footer />
     </div>
   )
