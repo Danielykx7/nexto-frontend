@@ -4,35 +4,38 @@ import { HttpTypes } from "@medusajs/types"
 import { Heading, Text } from "@medusajs/ui"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
-type ProductInfoProps = {
-  product: HttpTypes.StoreProduct
+// Helper: build breadcrumb chain
+const buildCrumbs = (
+  categories: HttpTypes.StoreProductCategory[]
+): HttpTypes.StoreProductCategory[] => {
+  if (categories.length === 0) return []
+  let current: HttpTypes.StoreProductCategory | null = categories[0]
+  const chain: HttpTypes.StoreProductCategory[] = []
+  while (current) {
+    chain.unshift(current)
+    current = (current.parent_category as HttpTypes.StoreProductCategory) || null
+  }
+  return chain
 }
 
-const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
+type ProductInfoProps = {
+  product: HttpTypes.StoreProduct & {
+    categories?: HttpTypes.StoreProductCategory[]
+  }
+  countryCode: string
+}
+
+const ProductInfo: React.FC<ProductInfoProps> = ({ product, countryCode }) => {
+  const categories = product.categories || []
+  const crumbs = buildCrumbs(categories)
+
   return (
     <div id="product-info" className="mb-6">
-      {/* 1) Category Breadcrumb */}
-      {product.categories && product.categories.length > 0 && (
-        <div className="mb-2 flex items-center text-ui-fg-muted">
-          <LocalizedClientLink href="/products">
-            <Text className="text-xs hover:underline">Products</Text>
-          </LocalizedClientLink>
-          {product.categories.map((category, index) => (
-            <React.Fragment key={category.id}>
-              <Text className="text-xs mx-1">/</Text>
-              <LocalizedClientLink href={`/categories/${category.handle}`}>
-                <Text className="text-xs hover:underline">{category.name}</Text>
-              </LocalizedClientLink>
-            </React.Fragment>
-          ))}
-        </div>
-      )}
-      {/* 2) Kolekce */}
+      {/* Collection */}
       {product.collection && (
         <div className="text-sm text-gray-600 mb-1">
-          Kolekce:{" "}
           <LocalizedClientLink
-            href={`/collections/${product.collection.handle}`}
+            href={`/${countryCode}/collections/${product.collection.handle}`}
             className="font-semibold hover:text-ui-fg-base"
           >
             {product.collection.title}
@@ -40,7 +43,21 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         </div>
       )}
 
-      {/* 3) Název + podtitul (subtitle) */}
+      {/* Tags */}
+      {product.tags && product.tags.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-2 mb-1">
+          {product.tags.map((tag) => (
+            <span
+              key={tag.id}
+              className="border rounded-full px-2 py-1 text-xs bg-gray-100"
+            >
+              {tag.value}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Title & Subtitle */}
       <Heading
         level="h2"
         className="text-3xl leading-10 text-ui-fg-base mb-1"

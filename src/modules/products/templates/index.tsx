@@ -1,3 +1,4 @@
+// src/modules/products/templates/index.tsx
 import React, { Suspense } from "react"
 import ImageGallery from "@modules/products/components/image-gallery"
 import ProductTabs from "@modules/products/components/product-tabs"
@@ -9,7 +10,7 @@ import ProductActionsWrapper from "./product-actions-wrapper"
 import { HttpTypes } from "@medusajs/types"
 
 interface ProductTemplateProps {
-  product: HttpTypes.StoreProduct
+  product: HttpTypes.StoreProduct & { categories?: HttpTypes.StoreProductCategory[] }
   region: HttpTypes.StoreRegion
   countryCode: string
 }
@@ -33,12 +34,12 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({ product, region, coun
           {/* Right: Info, Actions, Promo, Stock, Tags */}
           <div className="w-full lg:w-1/3 flex flex-col gap-y-6">
             {/* Product basic info */}
-            <ProductInfo product={product} />
+            <ProductInfo product={product} countryCode={countryCode} />
 
             {/* Add to Cart + Variant Selection */}
             <Suspense
               fallback={
-                <ProductActionsWrapper id={product.id} region={region} disabled />
+                <ProductActionsWrapper id={product.id} region={region} />
               }
             >
               <ProductActionsWrapper id={product.id} region={region} />
@@ -54,24 +55,10 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({ product, region, coun
 
             {/* Stock & Delivery Info */}
             <div className="space-y-2 text-sm text-gray-700">
-              <p>● Skladem {product.variants?.[0]?.inventory_quantity ?? 0} a více kusů</p>
-              <p>📦 Objednej nyní a doručíme <strong>zítra</strong></p>
+              <p> ● Skladem {product.variants?.[0]?.inventory_quantity ?? 0} a více kusů</p>
+              <p>📦 Objednej nyní a doručíme <strong>do 3-5 pracovních dní</strong></p>
               <p>⏳ Minimální trvanlivost do: <strong>30. 05. 2025</strong></p>
             </div>
-
-            {/* Tags */}
-            {product.tags && product.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {product.tags.map((tag) => (
-                  <span
-                    key={tag.id}
-                    className="border rounded-full px-2 py-1 text-xs bg-gray-100"
-                  >
-                    {tag.value}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -92,4 +79,3 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({ product, region, coun
 }
 
 export default ProductTemplate
-

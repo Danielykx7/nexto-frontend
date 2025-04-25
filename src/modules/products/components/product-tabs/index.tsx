@@ -1,3 +1,4 @@
+// src/modules/products/components/product-tabs/index.tsx
 "use client"
 
 import React from "react"
@@ -6,6 +7,11 @@ import FastDelivery from "@modules/common/icons/fast-delivery"
 import Refresh from "@modules/common/icons/refresh"
 import Accordion from "./accordion"
 import { HttpTypes } from "@medusajs/types"
+
+/**
+ * Komponenta ProductTabs zobrazuje karty s detaily produktu.
+ * Přidali jsme `whitespace-pre-line` pro zachování řádkování a `prose-sm` pro menší text.
+ */
 
 type ProductTabsProps = {
   product: HttpTypes.StoreProduct
@@ -16,7 +22,7 @@ const ProductTabs: React.FC<ProductTabsProps> = ({ product }) => {
     {
       label: "Popis",
       component: (
-        <div className="prose max-w-none py-8">
+        <div className="prose prose-sm text-small-regular max-w py-8 whitespace-pre-line">
           {product.description}
         </div>
       ),
@@ -58,7 +64,7 @@ const ProductTabs: React.FC<ProductTabsProps> = ({ product }) => {
   )
 }
 
-const ProductInfoTab: React.FC<ProductTabsProps> = ({ product }) => (
+const ProductInfoTab: React.FC<{ product: HttpTypes.StoreProduct }> = ({ product }) => (
   <div className="text-small-regular py-8">
     <div className="grid grid-cols-2 gap-x-8">
       <div className="flex flex-col gap-y-4">
